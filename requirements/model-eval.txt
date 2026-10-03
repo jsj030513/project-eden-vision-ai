@@ -1,0 +1,6 @@
+# Direct evaluation dependencies. Install the full lock for reproduction.
+# Pillow and Eden runtime dependencies are owned by pyproject.toml.
+torch==2.14.0
+transformers==5.17.0
+# Directly imported by the retained CLIP/SigLIP2 baseline download utilities.
+huggingface-hub==1.32.0

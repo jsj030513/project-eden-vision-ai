@@ -1,0 +1,205 @@
+{
+  "taxonomy_version": "eden-v1",
+  "concepts": [
+    {
+      "concept_id": "living_thing",
+      "parent_id": null,
+      "display_name": "Living thing",
+      "broad_category_id": "living_thing",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "person",
+      "parent_id": "living_thing",
+      "display_name": "Person",
+      "broad_category_id": "person",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "animal",
+      "parent_id": "living_thing",
+      "display_name": "Animal",
+      "broad_category_id": "animal",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "dog",
+      "parent_id": "animal",
+      "display_name": "Dog",
+      "broad_category_id": "animal",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "cat",
+      "parent_id": "animal",
+      "display_name": "Cat",
+      "broad_category_id": "animal",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "plant",
+      "parent_id": "living_thing",
+      "display_name": "Plant",
+      "broad_category_id": "plant",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "tree",
+      "parent_id": "plant",
+      "display_name": "Tree",
+      "broad_category_id": "plant",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "flower",
+      "parent_id": "plant",
+      "display_name": "Flower",
+      "broad_category_id": "plant",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "rose",
+      "parent_id": "flower",
+      "display_name": "Rose",
+      "broad_category_id": "plant",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "tulip",
+      "parent_id": "flower",
+      "display_name": "Tulip",
+      "broad_category_id": "plant",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "artifact",
+      "parent_id": null,
+      "display_name": "Human-made object",
+      "broad_category_id": "artifact",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "furniture",
+      "parent_id": "artifact",
+      "display_name": "Furniture",
+      "broad_category_id": "furniture",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "chair",
+      "parent_id": "furniture",
+      "display_name": "Chair",
+      "broad_category_id": "furniture",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "table",
+      "parent_id": "furniture",
+      "display_name": "Table",
+      "broad_category_id": "furniture",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "vehicle",
+      "parent_id": "artifact",
+      "display_name": "Vehicle",
+      "broad_category_id": "vehicle",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "car",
+      "parent_id": "vehicle",
+      "display_name": "Car",
+      "broad_category_id": "vehicle",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "bicycle",
+      "parent_id": "vehicle",
+      "display_name": "Bicycle",
+      "broad_category_id": "vehicle",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "electronic_device",
+      "parent_id": "artifact",
+      "display_name": "Electronic device",
+      "broad_category_id": "electronic_device",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "computer",
+      "parent_id": "electronic_device",
+      "display_name": "Computer",
+      "broad_category_id": "electronic_device",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "phone",
+      "parent_id": "electronic_device",
+      "display_name": "Phone",
+      "broad_category_id": "electronic_device",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "food",
+      "parent_id": null,
+      "display_name": "Food",
+      "broad_category_id": "food",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "scene",
+      "parent_id": null,
+      "display_name": "Scene",
+      "broad_category_id": "scene",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "indoor_scene",
+      "parent_id": "scene",
+      "display_name": "Indoor scene",
+      "broad_category_id": "scene",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "outdoor_scene",
+      "parent_id": "scene",
+      "display_name": "Outdoor scene",
+      "broad_category_id": "scene",
+      "aliases": [],
+      "descriptions": []
+    },
+    {
+      "concept_id": "document",
+      "parent_id": null,
+      "display_name": "Document",
+      "broad_category_id": "document",
+      "aliases": [],
+      "descriptions": []
+    }
+  ]
+}

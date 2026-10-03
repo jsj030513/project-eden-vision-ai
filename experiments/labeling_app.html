@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Eden Vision Ground Truth</title>
+  <style>
+    :root {color-scheme:light; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#172b28; background:#f3f6f4}
+    * {box-sizing:border-box} [hidden] {display:none !important} body {margin:0} main {max-width:1280px; margin:auto; padding:28px}
+    h1 {font-size:26px; margin:0 0 8px} h2 {font-size:18px; margin:22px 0 10px}
+    p {line-height:1.5} .muted, small {color:#526762} .top {display:flex; justify-content:space-between; gap:20px; align-items:center}
+    progress {width:220px; accent-color:#226e53} .toolbar {display:flex; gap:14px; flex-wrap:wrap; align-items:center; margin:22px 0}
+    .layout {display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:24px}
+    .card {background:#fff; border:1px solid #d7e1db; border-radius:14px; padding:22px; min-width:0}
+    .imagebox {background:#edf1ee; border-radius:9px; height:440px; display:flex; align-items:center; justify-content:center}
+    img {max-width:100%; max-height:100%; object-fit:contain} #source {overflow-wrap:anywhere}
+    button, input, textarea, select {font:inherit} button, select {cursor:pointer}
+    button {border:1px solid #b8cbc1; background:white; color:#244e3e; padding:9px 13px; border-radius:8px}
+    button:hover {background:#edf6f0} button:disabled {opacity:.45; cursor:default}
+    button.active, button.primary {background:#226e53; color:white; border-color:#226e53}
+    input[type=text], textarea, select {padding:10px; border:1px solid #b8cbc1; border-radius:7px; background:white; color:#172b28}
+    input[type=text], textarea {width:100%} textarea {resize:vertical}
+    input[type=checkbox] {accent-color:#226e53; width:17px; height:17px; vertical-align:middle}
+    :focus-visible {outline:3px solid #dd9d30; outline-offset:2px}
+    .chips {display:flex; gap:7px; flex-wrap:wrap; margin:10px 0}
+    #results {max-height:240px; overflow:auto; display:grid; gap:5px; margin:10px 0}
+    #results button {text-align:left} #results small {display:block; padding-top:3px}
+    #results button.active small {color:#e3f2e7} .navigation {display:flex; flex-wrap:wrap; gap:9px; margin-top:22px}
+    #message {min-height:26px; margin:12px 0; white-space:pre-wrap} #message.error {color:#ae2929}
+    fieldset {border:0; padding:0; margin:0; min-width:0} #validation {font-size:13px; color:#675329}
+    @media(max-width:850px) {.layout {grid-template-columns:1fr} main {padding:16px} .imagebox {height:330px} .top {align-items:flex-start; flex-direction:column}}
+  </style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <div><h1>Eden Vision Ground Truth</h1><span class="muted">사람이 직접 라벨링 · eden-v2 · 로컬 전용</span></div>
+    <div><div id="progressText">불러오는 중…</div><progress id="progress" value="0" max="1"></progress></div>
+  </header>
+  <div id="message" role="status" aria-live="polite"></div>
+  <div class="toolbar">
+    <label>항목 <select id="jump" aria-label="이미지 선택"></select></label>
+    <label><input id="skip" type="checkbox" checked> 이동 시 완료 항목 건너뛰기</label>
+    <span id="position"></span>
+  </div>
+  <div class="layout" id="workspace" hidden>
+    <section class="card">
+      <div class="imagebox"><img id="image" alt="현재 라벨링 이미지"></div>
+      <h2 id="evalId"></h2><p id="source" class="muted"></p>
+      <p id="itemStatus"></p>
+      <p class="muted">← / → 이전·다음<br>⌘ Enter / Ctrl Enter 저장 &amp; 다음</p>
+    </section>
+    <section class="card">
+      <fieldset id="editor">
+        <h2 style="margin-top:0">Ground Truth</h2>
+        <label><input id="unknown" type="checkbox"> Unknown</label>
+        <p class="muted">가장 구체적인 concept를 복수 선택하세요. 상위 concept는 저장 시 자동 반영됩니다.</p>
+        <label for="search">Concept ID / display name 검색</label>
+        <input type="text" id="search" placeholder="Search concepts…" autocomplete="off">
+        <div id="results" aria-label="Concept 검색 결과"></div>
+        <div>Selected</div><div id="selected" class="chips"></div>
+        <h2>Tags</h2>
+        <small>최소 1개 선택 · single_object / multi_object는 택일입니다. 버튼에 마우스를 올리면 설명을 볼 수 있습니다.</small>
+        <div id="tagChoices" class="chips" role="group" aria-label="Canonical tags"></div>
+        <small id="tagHelp" aria-live="polite"></small>
+        <h2><label for="notes">Notes <small>(optional)</small></label></h2>
+        <textarea id="notes" rows="3"></textarea>
+      </fieldset>
+      <p id="validation"></p>
+      <div class="navigation">
+        <button id="previous" type="button">Previous</button>
+        <button id="save" type="button">Save</button>
+        <button id="saveNext" type="button" class="primary">Save &amp; Next</button>
+        <button id="next" type="button">Next</button>
+      </div>
+    </section>
+  </div>
+</main>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+// Descriptions only; the selectable list comes from canonical ALLOWED_TAGS via the API.
+const tagHelp = {
+  single_object: "한 종류의 주요 피사체가 중심인 이미지",
+  multi_object: "여러 개 또는 여러 종류의 주요 대상이 평가 대상인 이미지",
+  fine_grained: "구체적인 세부 class 구분이 중요한 이미지",
+  broad_only: "실제 대상은 더 구체적이지만 현재 taxonomy에는 세부 class가 없어 상위 concept만 Ground Truth로 사용한 이미지",
+  ambiguous: "사람이 봐도 정답 경계가 애매한 이미지",
+  unknown: "eden-v2 taxonomy로 핵심 대상을 표현할 수 없는 이미지",
+  scene: "개별 물체뿐 아니라 전체 장면/환경 자체가 Ground Truth에 중요한 이미지"
+};
+let items = [], concepts = [], allowedTags = [], selectedTags = new Set(), index = 0, selected = new Set();
+let dirty = false, busy = false, originalNotes = null;
+function message(text, error = false) { $("message").textContent = text; $("message").className = error ? "error" : ""; }
+async function api(url, options = {}) {
+  const response = await fetch(url, options);
+  const data = await response.json();
+  if (!response.ok) throw new Error(typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail));
+  return data;
+}
+function tags() { return [...selectedTags]; }
+function button(text, onClick) {
+  const element = document.createElement("button"); element.type = "button";
+  element.textContent = text; element.addEventListener("click", onClick); return element;
+}
+function summary() {
+  const done = items.filter(r => r.completed).length;
+  $("progressText").textContent = `${done} / ${items.length} completed · ${items.length - done} remaining`;
+  $("progress").max = items.length || 1; $("progress").value = done;
+  $("jump").replaceChildren();
+  items.forEach((row, i) => {
+    const option = document.createElement("option"); option.value = i;
+    option.textContent = `${row.completed ? "✓" : "○"} ${i + 1}. ${row.id}`;
+    $("jump").append(option);
+  });
+  $("jump").value = index;
+}
+function target(step) {
+  for (let i = index + step; i >= 0 && i < items.length; i += step) {
+    if (!$("skip").checked || !items[i].completed) return i;
+  }
+  return -1;
+}
+function controls() {
+  const invalid = !$("unknown").checked && selected.size === 0 ? "Concept를 1개 이상 선택하세요."
+    : tags().length === 0 ? "Tag를 1개 이상 선택하세요."
+    : tags().some(tag => !allowedTags.includes(tag)) ? "허용되지 않은 기존 태그가 있습니다: " + tags().filter(tag => !allowedTags.includes(tag)).join(", ")
+    : selectedTags.has("single_object") && selectedTags.has("multi_object") ? "single_object / multi_object 중 하나만 선택하세요."
+    : $("unknown").checked !== selectedTags.has("unknown") ? "Unknown 체크와 unknown 태그가 일치해야 합니다." : "";
+  $("validation").textContent = invalid;
+  $("save").disabled = $("saveNext").disabled = busy || !!invalid;
+  $("previous").disabled = busy || target(-1) < 0;
+  $("next").disabled = busy || target(1) < 0;
+  $("jump").disabled = $("skip").disabled = busy;
+  $("editor").disabled = busy;
+}
+function renderConcepts() {
+  const query = $("search").value.trim().toLowerCase();
+  $("search").disabled = $("unknown").checked;
+  $("results").replaceChildren(); $("selected").replaceChildren();
+  for (const cid of selected) {
+    $("selected").append(button(`${cid} ×`, () => { selected.delete(cid); changed(); renderConcepts(); }));
+  }
+  if (!selected.size) $("selected").textContent = $("unknown").checked ? "Unknown — expected: []" : "아직 선택하지 않았습니다.";
+  if (!$("unknown").checked) {
+    for (const concept of concepts.filter(c => `${c.concept_id} ${c.display_name}`.toLowerCase().includes(query))) {
+      const b = button(`${concept.concept_id} · ${concept.display_name}`, () => {
+        if (selected.has(concept.concept_id)) selected.delete(concept.concept_id); else selected.add(concept.concept_id);
+        changed(); renderConcepts();
+      });
+      b.classList.toggle("active", selected.has(concept.concept_id));
+      b.setAttribute("aria-pressed", String(selected.has(concept.concept_id)));
+      const path = document.createElement("small"); path.textContent = concept.path.join(" > "); b.append(path);
+      $("results").append(b);
+    }
+    if (!$("results").childElementCount) $("results").textContent = "검색 결과가 없습니다.";
+  }
+  renderTags(); controls();
+}
+function renderTags() {
+  $("tagChoices").replaceChildren();
+  for (const tag of allowedTags) {
+    const b = button(tag, () => {
+      if (tag === "unknown") { setUnknown(!$("unknown").checked); return; }
+      if (selectedTags.has(tag)) selectedTags.delete(tag);
+      else {
+        if (tag === "single_object") selectedTags.delete("multi_object");
+        if (tag === "multi_object") selectedTags.delete("single_object");
+        selectedTags.add(tag);
+      }
+      $("tagHelp").textContent = tagHelp[tag] || tag;
+      changed(); renderTags();
+    });
+    b.title = tagHelp[tag] || tag;
+    b.setAttribute("aria-description", b.title);
+    b.addEventListener("focus", () => { $("tagHelp").textContent = b.title; });
+    b.classList.toggle("active", selectedTags.has(tag));
+    b.setAttribute("aria-pressed", String(selectedTags.has(tag))); $("tagChoices").append(b);
+  }
+}
+function setUnknown(value) {
+  $("unknown").checked = value;
+  if (value) { selected.clear(); selectedTags.add("unknown"); }
+  else selectedTags.delete("unknown");
+  $("tagHelp").textContent = tagHelp.unknown;
+  changed(); renderConcepts();
+}
+function changed() { dirty = true; $("itemStatus").textContent = "저장되지 않은 변경사항"; controls(); }
+function show(i) {
+  index = i; const row = items[index]; dirty = false;
+  $("workspace").hidden = false; $("jump").value = index;
+  $("position").textContent = `${index + 1} / ${items.length}`;
+  $("evalId").textContent = row.id; $("source").textContent = `source: ${row.source_filename || row.file}`;
+  $("itemStatus").textContent = row.completed ? "✓ 저장된 Ground Truth" : "미완료";
+  $("image").src = `/api/images/${encodeURIComponent(row.id)}`;
+  $("image").alt = `${row.id} · ${row.source_filename || row.file}`;
+  selected = new Set((row.expected || []).map(c => c.concept_id));
+  $("unknown").checked = row.unknown === true;
+  if ($("unknown").checked) selected.clear();
+  selectedTags = new Set(row.tags || []);
+  $("tagHelp").textContent = "";
+  originalNotes = row.notes; $("notes").value = row.notes || ""; $("search").value = "";
+  renderConcepts();
+}
+function navigate(i) {
+  if (busy || i < 0 || i >= items.length || i === index) return;
+  if (dirty && !window.confirm("저장하지 않은 변경사항을 버리고 이동할까요?")) { $("jump").value = index; return; }
+  message(""); show(i);
+}
+async function save(advance) {
+  if (busy || $("save").disabled) return;
+  busy = true; controls(); message("저장 중…");
+  try {
+    const row = items[index];
+    const result = await api(`/api/items/${encodeURIComponent(row.id)}`, {
+      method: "PUT", headers: {"Content-Type": "application/json", "X-Labeling-Request": "1"},
+      body: JSON.stringify({taxonomy_version: "eden-v2", revision: row.revision,
+        concept_ids: [...selected], unknown: $("unknown").checked, tags: tags(),
+        notes: $("notes").value === (originalNotes || "") ? originalNotes : ($("notes").value || null)})
+    });
+    items[index] = result.item; dirty = false; summary();
+    let next = advance ? target(1) : -1;
+    // Save & Next wraps to unfinished earlier items after reaching the end.
+    if (advance && next < 0 && $("skip").checked) next = items.findIndex(r => !r.completed);
+    show(next >= 0 ? next : index);
+    message(advance && next < 0 ? "저장했습니다. 다음 미완료 항목이 없습니다." : "저장했습니다.");
+  } catch (error) { message(error.message, true); }
+  finally { busy = false; controls(); }
+}
+$("search").addEventListener("input", renderConcepts);
+$("unknown").addEventListener("change", () => setUnknown($("unknown").checked));
+$("notes").addEventListener("input", changed);
+$("skip").addEventListener("change", controls);
+$("jump").addEventListener("change", () => navigate(Number($("jump").value)));
+$("previous").addEventListener("click", () => navigate(target(-1)));
+$("next").addEventListener("click", () => navigate(target(1)));
+$("save").addEventListener("click", () => save(false));
+$("saveNext").addEventListener("click", () => save(true));
+$("image").addEventListener("error", () => message("이미지를 표시할 수 없습니다. 등록 경로와 브라우저 지원 형식을 확인하세요.", true));
+document.addEventListener("keydown", event => {
+  if (!items.length || event.isComposing) return;
+  if ((event.metaKey || event.ctrlKey) && event.key === "Enter") { event.preventDefault(); save(true); return; }
+  if (event.target.closest("input,textarea,select,[contenteditable]")) return;
+  if (event.altKey || event.metaKey || event.ctrlKey || event.shiftKey) return;
+  if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+    event.preventDefault(); navigate(target(event.key === "ArrowLeft" ? -1 : 1));
+  }
+});
+window.addEventListener("beforeunload", event => { if (dirty || busy) { event.preventDefault(); event.returnValue = ""; } });
+(async () => {
+  try {
+    const [dataset, taxonomy] = await Promise.all([api("/api/dataset"), api("/api/concepts")]);
+    items = dataset.items; concepts = taxonomy.concepts; allowedTags = dataset.allowed_tags;
+    index = dataset.initial_index; summary();
+    if (items.length) show(index); else message("draft 항목이 없습니다.");
+  } catch (error) { message(error.message, true); }
+})();
+</script>
+</body>
+</html>

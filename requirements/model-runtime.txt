@@ -1,0 +1,8 @@
+# Optional production CLIP runtime; API-only dependencies remain in pyproject.toml.
+# Validated on Python 3.12.14 macOS arm64. No model downloads.
+torch==2.14.0
+transformers==5.17.0
+huggingface-hub==1.32.0
+tokenizers==0.23.2
+safetensors==0.8.0
+numpy==2.5.3
